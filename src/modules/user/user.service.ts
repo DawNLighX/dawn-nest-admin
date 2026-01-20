@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto } from './create-user.dto';
 import { DeleteResult } from 'typeorm/browser';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -20,13 +21,23 @@ export class UserService {
     return this.usersRepository.find();
   }
 
+  findByUsername(username: string): Promise<User | null> {
+    return this.usersRepository.findOneBy({ username });
+  }
+
   create(createUserDto: CreateUserDto): Promise<User> {
+    const userData = { ...createUserDto };
+
+    // 对密码进行哈希加密
+    const saltRounds = 12;
+    const hashedPassword = bcrypt.hashSync(userData.password, saltRounds);
+
     const user = new User();
-    user.username = createUserDto.username;
-    user.password = createUserDto.password;
-    user.avatar = createUserDto.avatar;
-    user.role = createUserDto.role;
-    user.nickname = createUserDto.nickname;
+    user.username = userData.username;
+    user.password = hashedPassword;
+    user.avatar = userData.avatar;
+    user.role = userData.role;
+    user.nickname = userData.nickname;
     user.active = 1;
 
     return this.usersRepository.save(user);
